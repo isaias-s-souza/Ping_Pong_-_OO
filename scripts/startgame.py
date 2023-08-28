@@ -4,6 +4,7 @@ from scripts.scene import Scene
 from scripts.menu import Menu
 from scripts.gameOver import GameOver
 from scripts.game import Game
+from scripts.obj import Obj
 
 class StartGame:
     def __init__(self):
@@ -12,166 +13,190 @@ class StartGame:
         pygame.mixer.init()
         pygame.font.init()
 
+        #um tipo de array
+        self.all_sprites = pygame.sprite.Group() #Sprite padrão para todos objetos
+
         #janela
-        self.display = pygame.display.set_mode((1280, 720))
+        self.display = pygame.display.set_mode([WIDTH, HEIGHT])
 
-campo_img = pygame.image.load("assets/bg.png")
-campo = campo_img.get_rect()
+        #cena 
+        self.scene = "menu"
+        self.current_scene = Menu()
 
-#parte - formas - player
-#pos e forma em retangulo
-# 0,0 pos esquerda superior
-player1_img = pygame.image.load("assets/player1.png")
-player1 = player1_img.get_rect()
-# player1 = pygame.Rect(0, 0, 30, 150)
-player1_velocidade = 6
-player1_score = 0
+        #Informações Jogo
+        self.player1_velocidade = 15
+        self.player1_score = 0
 
-player2_img = pygame.image.load("assets/player2.png")
-player2 = player2_img.get_rect(right=1280)
-player2_score = 0
+        self.player2_score = 0
 
-ball_img=pygame.image.load("assets/ball.png")
-ball = ball_img.get_rect(center=[1280/2, 720/2])
-#ball = pygame.Rect(600, 350, 150, 15)
-ball_dir_x = 6
-ball_dir_y = 6
+        self.ball_dir_x = 6
+        self.ball_dir_y = 6
 
-#parte 7 -
-font = pygame.font.Font(None, 50)
-placar_player1 = font.render(str(player1_score), True, "white")
-placar_player2 = font.render(str(player2_score), True, "white")
+        #Objetos do jogo
+        self.campo = Obj("assets/bg.png", [self.all_sprites])
+        #campo_img = self.campo.img
+        #campo = self.campo.rect
 
-menu_img = pygame.image.load("assets/menu.png")
-menu = menu_img.get_rect()
+        self.player1 = Obj("assets/player1.png", [self.all_sprites])
+        #player1_img = self.player1.img
+        #player1 = self.player1.rect
 
-gameover_img = pygame.image.load("assets/gameover.png")
-gameover = gameover_img.get_rect()
+        self.player2 = Obj("assets/player2.png", [self.all_sprites], right = 1280)
+        #player2_img = self.player2.img
+        #player2 = self.player2.rect
 
-fade_img = pygame.Surface((1280, 720)).convert_alpha()
-fade = fade_img.get_rect()
-fade_img.fill("black")
-fade_alpha = 255
+        self.ball= Obj("assets/ball.png", [self.all_sprites], center = [1280/2, 720/2])
+        #ball_img = self.ball.img
+        #ball = self.ball.rect
 
-music = pygame.mixer.Sound("assets/music.ogg")
-music.play(-1)
+        self.font = pygame.font.Font(None, 50)
+        self.placar_player1 = self.font.render(str(self.player1_score), True, "white")
+        self.placar_player2 = self.font.render(str(self.player2_score), True, "white")
 
-#loop do game
-cena = "menu"
+        
+        # menu_img = pygame.image.load("assets/menu.png")
+        # menu = menu_img.get_rect()
 
-fps = pygame.time.Clock()
-loop = True
-while loop:
+        # gameover_img = pygame.image.load("assets/gameover.png")
+        # gameover = gameover_img.get_rect()
 
-    if cena == "jogo":
-        #parte 2 - eventos
-        for event in pygame.event.get():
-            #evento do X de fechar
-            if event.type == pygame.QUIT:
-                loop = False
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_s:
-                    player1_velocidade = 6
-                if event.key == pygame.K_w:
-                    player1_velocidade = -6
+        #Configuração geral jogo
+        self.fade_img = pygame.Surface((1280, 720)).convert_alpha()
+        self.fade = self.fade_img.get_rect()
+        self.fade_img.fill("black")
+        self.fade_alpha = 255
 
-        if player2_score >= 3:
-            cena = "gameover"
-            fade_alpha = 255
+        self.music = pygame.mixer.Sound("assets/music.ogg")
+        self.music.play(-1)
 
-        if player1_score >= 3:
-            cena = "gameover"
-            fade_alpha = 255
+        self.fps = pygame.time.Clock()
 
-        #parte 6 - colisão e mov bola
-        if ball.colliderect(player1) or ball.colliderect(player2):
-            ball_dir_x *= -1
-            hit = pygame.mixer.Sound("assets/pong.wav")
-            hit.play()
 
-        if player1.y <= 0:
-            player1.y = 0
-        elif player1.y >= 720 - 150:
-            player1.y = 720 - 150
 
-        player1.y += player1_velocidade
+    def run(self):
+        while True:
+            if self.scene == "game":
+                self.current_scene = Game()
+                
+                #parte 2 - eventos
+                for event in pygame.event.get():
+                    #evento do X de fechar
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
 
-        if ball.x <= 0:
-            player2_score += 1
-            placar_player2 = font.render(str(player2_score), True, "white")
-            ball.x = 600
-            ball_dir_x *= -1
-        elif ball.x >= 1280:
-            player1_score += 1
-            placar_player1 = font.render(str(player1_score), True, "white")
-            ball.x = 600
-            ball_dir_x *= -1
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_s:
+                            self.player1_velocidade = 15
+                        if event.key == pygame.K_w:
+                            self.player1_velocidade = -15
+                    
+                    self.current_scene.events(event)
 
-        if ball.y <= 0:
-            ball_dir_y *= -1
-        elif ball.y >= 720 - 15:
-            ball_dir_y *= -1
+                if self.player2_score >= 3:
+                    self.scene = "gameover"
+                    self.fade_alpha = 255
 
-        ball.x += ball_dir_x
-        ball.y += ball_dir_y
+                if self.player1_score >= 3:
+                    self.scene = "gameover"
+                    self.fade_alpha = 255
 
-        player2.y = ball.y - 75
+                #parte 6 - colisão e mov bola
+                if self.ball.rect.colliderect(self.player1.rect) or self.ball.rect.colliderect(self.player2.rect):
+                    self.ball_dir_x *= -1
+                    hit = pygame.mixer.Sound("assets/pong.wav")
+                    hit.play()
 
-        #fica preenchendo a tela
-        display.fill((0, 0, 0))
+                if self.player1.rect.y <= 0:
+                    self.player1.rect.y = 0
+                elif self.player1.rect.y >= 720 - 150:
+                    self.player1.rect.y = 720 - 150
 
-        display.blit(campo_img, campo)
-        display.blit(player1_img, player1)
-        display.blit(player2_img, player2)
-        display.blit(ball_img, ball)
+                self.player1.rect.y += self.player1_velocidade
 
-        display.blit(placar_player1, (500, 50))
-        display.blit(placar_player2, (780, 50))
-    elif cena == "gameover":
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                loop = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    player2_score = 0
-                    player1_score = 0
-                    placar_player1 = font.render(str(player1_score), True, "white")
-                    placar_player2 = font.render(str(player2_score), True, "white")
-                    ball.x = 640
-                    ball.y = 320
-                    player1.y = 0
-                    player2.y = 0
-                    cena = "menu"
-                elif event.key == pygame.K_q:
-                    loop = False
-        if fade_alpha > 0:
-            fade_alpha -= 10
-            fade_img.set_alpha(fade_alpha)
+                if self.ball.rect.x <= 0:
+                    self.player2_score += 1
+                    self.placar_player2 = self.font.render(str(self.player2_score), True, "white")
+                    self.ball.rect.x = 600
+                    self.ball_dir_x *= -1
+                elif self.ball.rect.x >= 1280:
+                    self.player1_score += 1
+                    self.placar_player1 = self.font.render(str(self.player1_score), True, "white")
+                    self.ball.rect.x = 600
+                    self.ball_dir_x *= -1
 
-        display.fill((0, 0, 0))
-        display.blit(gameover_img, gameover)
-        display.blit(fade_img,fade)
-    elif cena == "menu":
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                loop = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    cena = "jogo"
-                    fade_alpha = 255
-                    start = pygame.mixer.Sound("assets/start.wav")
-                    start.play()
-                if event.key == pygame.K_q:
-                    loop = False
-        if fade_alpha > 0:
-            fade_alpha -= 10
-            fade_img.set_alpha(fade_alpha)
-        display.fill((0, 0, 0))
-        text_win = font.render("Aperte Enter", True, "white")
-        display.blit(menu_img, menu)
-        display.blit(fade_img, fade)
+                if self.ball.rect.y <= 0:
+                    self.ball_dir_y *= -1
+                elif self.ball.rect.y >= 720 - 15:
+                    self.ball_dir_y *= -1
 
-    #atualizano a tela
-    fps.tick(60)
-    pygame.display.flip()
+                self.ball.rect.x += self.ball_dir_x
+                self.ball.rect.y += self.ball_dir_y
+
+                self.player2.rect.y = self.ball.rect.y - 75
+
+                #fica preenchendo a tela
+                self.display.fill((0, 0, 0))
+
+                self.display.blit(self.campo.image, self.campo.rect)
+                self.display.blit(self.player1.image, self.player1.rect)
+                self.display.blit(self.player2.image, self.player2.rect)
+                self.display.blit(self.ball.image, self.ball.rect)
+
+                self.display.blit(self.placar_player1, (500, 50))
+                self.display.blit(self.placar_player2, (780, 50))
+            elif self.scene == "gameover":
+                self.current_scene = GameOver()
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_RETURN:
+                            self.player2_score = 0
+                            self.player1_score = 0
+                            self.placar_player1 = self.font.render(str(self.player1_score), True, "white")
+                            self.placar_player2 = self.font.render(str(self.player2_score), True, "white")
+                            self.ball.rect.x = 640
+                            self.ball.rect.y = 320
+                            self.player1.rect.y = 0
+                            self.player2.rect.y = 0
+                            self.scene = "menu"
+                        elif event.key == pygame.K_q:
+                            pygame.quit()
+
+                    self.current_scene.events(event)
+
+                if self.fade_alpha > 0:
+                    self.fade_alpha -= 10
+                    self.fade_img.set_alpha(self.fade_alpha)
+
+                self.display.fill((0, 0, 0))
+                self.display.blit(self.current_scene.bg.image, self.current_scene.bg.rect)
+                self.display.blit(self.fade_img,self.fade)
+            elif self.scene == "menu":
+                self.current_scene = Menu()
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_RETURN:
+                            self.scene = "game"
+                            fade_alpha = 255
+                            start = pygame.mixer.Sound("assets/start.wav")
+                            start.play()
+                        if event.key == pygame.K_q:
+                            pygame.quit()
+
+                    self.current_scene.events(event)
+                        
+                if self.fade_alpha > 0:
+                    self.fade_alpha -= 10
+                    self.fade_img.set_alpha(self.fade_alpha)
+                self.display.fill((0, 0, 0))
+                text_win = self.font.render("Aperte Enter", True, "white")
+                self.display.blit(self.current_scene.bg.image, self.current_scene.bg.rect)
+                self.display.blit(self.fade_img, self.fade)
+
+            #atualizano a tela
+            self.fps.tick(60)
+            pygame.display.flip()
